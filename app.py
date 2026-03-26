@@ -30,19 +30,22 @@ def create_slug(text):
     return text
 
 # --- MODERN KURUMSAL TASARIM (CSS) ---
-st.markdown(f"""
+st.markdown("""
     <style>
-    /* KRİTİK: SAYFAYI EN ÜSTE YAPIŞTIRAN KODLAR */
-    [data-testid="stAppViewBlockContainer"] {{
+    /* 1. Streamlit'in kendi footer ve header kalıntılarını tamamen siler */
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    #MainMenu {visibility: hidden;}
+    [data-testid="stHeader"] {display: none !important;}
+
+    /* 2. KRİTİK: SAYFAYI EN ÜSTE YAPIŞTIRAN KODLAR */
+    [data-testid="stAppViewBlockContainer"] {
         padding-top: 1rem !important; /* En üstteki boşluğu öldürdük */
         padding-bottom: 0rem !important;
-    }}
-    [data-testid="stHeader"], header {{
-        display: none !important; /* Üstteki o gri kutuyu tamamen sildik */
-    }}
+    }
     
-    .stApp {{ background-color: #1e1f20; }}
-    h1, h2, h3, p, span, label {{ color: #e0e0e0 !important; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }}
+    .stApp { background-color: #1e1f20; }
+    h1, h2, h3, p, span, label { color: #e0e0e0 !important; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     
     .stExpander, .nav-bar, .product-card-container, .mapping-container {{
         background: rgba(255, 255, 255, 0.03) !important;
