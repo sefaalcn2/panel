@@ -32,6 +32,13 @@ def create_slug(text):
 # --- MODERN KURUMSAL TASARIM (CSS) ---
 st.markdown("""
     <style>
+    /* O alt çubuğu ve balonlu yazıyı tamamen yok eder */
+    footer {display: none !important;}
+    header {display: none !important;}
+    [data-testid="stHeader"], [data-testid="stDecoration"] {display: none !important;}
+    
+    /* Alt taraftaki o hayalet boşluğu siler */
+    .main .block-container {padding-bottom: 0rem !important; margin-bottom: -5rem !important;}
     /* 1. Streamlit'in kendi footer ve header kalıntılarını tamamen siler */
     footer {visibility: hidden;}
     header {visibility: hidden;}
