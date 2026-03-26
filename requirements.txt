@@ -1,2 +1,4 @@
-kullanıcı adi
-id.
+streamlit
+pandas
+openpyxl
+xlsxwriter
