@@ -37,9 +37,10 @@ st.markdown("""
         padding-top: 1rem !important;
         padding-bottom: 0rem !important;
     }
-    [data-testid="stHeader"], header {
-        display: none !important;
-    }
+[data-testid="stHeader"] {
+    visibility: visible;
+    background: rgba(0,0,0,0); /* Arka planı şeffaf yapar */
+}
     
     .stApp { background-color: #1e1f20; }
     h1, h2, h3, p, span, label { color: #e0e0e0 !important; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -111,10 +112,14 @@ def show_login():
     with c2:
         st.markdown('<div class="login-wrapper"><div class="login-card">', unsafe_allow_html=True)
         st.image("https://aletedevat.com.tr/wp-content/uploads/2026/02/Yeni-Proje-5.png", width=220)
-        username = st.text_input("Kullanıcı Adı", placeholder="Kullanıcı Adı", label_visibility="collapsed")
-        password = st.text_input("Şifre", type="password", placeholder="Şifre", label_visibility="collapsed")
+        st.markdown("<h2 style='margin-bottom:25px; font-weight:700; color:white;'>Yönetici Paneli</h2>", unsafe_allow_html=True)
+        
+        # key parametreleri hatayı çözer:
+        username = st.text_input("Kullanıcı Adı", placeholder="Kullanıcı Adı", label_visibility="collapsed", key="user_input")
+        password = st.text_input("Şifre", type="password", placeholder="Şifre", label_visibility="collapsed", key="pass_input")
+        
         st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("Sisteme Giriş Yap", type="primary", use_container_width=True):
+        if st.button("Sisteme Giriş Yap", type="primary", use_container_width=True, key="login_btn"):
             if username in USER_PROFILES and password == USER_PROFILES[username]["pw"]:
                 st.session_state.authenticated = True
                 st.session_state.user_full_name = USER_PROFILES[username]["name"]
