@@ -10,6 +10,8 @@ import time
 USER_PROFILES = {
     "sefaalcn": {"pw": "1095Sefa.", "name": "Sefa Alçın", "title": "Mağaza Yöneticisi"},
     "avnialcin": {"pw": "1962", "name": "Avni Alçın", "title": "e-Ticaret Yöneticisi"}
+    "ealakuzu": {"pw": "Gencal7994.", "name": "Emre Alakuzu", "title": "Mağaza Yöneticisi"}
+    "arifhikmet": {"pw": "arifhikmet.", "name": "Arif", "title": "Mağaza Yöneticisi"}
 }
 
 # OTURUM KONTROLLERI
