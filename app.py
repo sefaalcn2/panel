@@ -3,10 +3,9 @@ import pandas as pd
 import math
 import re
 from io import BytesIO
-
-# --- SAYFA AYARLARI ---
-st.set_page_config(page_title="Alet Edevat | Yönetim Merkezi", layout="wide")
-
+import requests
+from bs4 import BeautifulSoup
+import time
 # --- KULLANICI VERITABANI ---
 USER_PROFILES = {
     "sefaalcn": {"pw": "1095Sefa.", "name": "Sefa Alçın", "title": "Mağaza Yöneticisi"},
@@ -29,7 +28,7 @@ def create_slug(text):
     text = re.sub(r'[^a-z0-9\s-]', '', text)
     text = re.sub(r'\s+', '-', text).strip('-')
     return text
-
+#WEB SCRAPPER SİSTEMİ
 # --- KURUMSAL TASARIM (CSS) ---
 st.markdown("""
     <style>
@@ -151,7 +150,7 @@ else:
         """, unsafe_allow_html=True)
         st.divider()
         # İsimlendirmeler isteğin üzerine güncellendi
-        modul = st.selectbox("Uygulama Seçin:", ["Excel Düzenleme", "Alan Eşleme Paneli", "Pazaryeri Şablon Oluşturma", "Excel Alan Özelleştirme" ])
+        modul = st.selectbox("Uygulama Seçin:", ["Excel Düzenleme", "Alan Eşleme Paneli", "Pazaryeri Şablon Oluşturma", "Excel Alan Özelleştirme"])
         st.divider()
 
         if modul == "Excel Düzenleme":
@@ -594,6 +593,7 @@ else:
                     out = BytesIO()
                     with pd.ExcelWriter(out, engine='xlsxwriter') as wr: merged.to_excel(wr, index=False)
                     st.download_button("Güncel Listeyi İndir", out.getvalue(), "aletedevat_final_liste.xlsx", use_container_width=True)
+
     with st.sidebar:
         st.divider()
         if not st.session_state.master_df.empty:
