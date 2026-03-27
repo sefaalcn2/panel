@@ -1,4 +1,8 @@
 streamlit
 pandas
+openpyxl
+xlsxwriter
+bytesIOstreamlit
+pandas
 requests
 beautifulsoup4
