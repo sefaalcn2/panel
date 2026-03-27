@@ -151,7 +151,7 @@ else:
         """, unsafe_allow_html=True)
         st.divider()
         # İsimlendirmeler isteğin üzerine güncellendi
-        modul = st.selectbox("Uygulama Seçin:", ["Excel Düzenleme", "Alan Eşleme Paneli", "Pazaryeri Şablon Oluşturma"])
+        modul = st.selectbox("Uygulama Seçin:", ["Excel Düzenleme", "Alan Eşleme Paneli", "Pazaryeri Şablon Oluşturma", "Excel Alan Özelleştirme" ])
         st.divider()
 
         if modul == "Excel Düzenleme":
@@ -409,7 +409,7 @@ else:
                     with pd.ExcelWriter(out_merged, engine='xlsxwriter') as wr: sonuc_df.to_excel(wr, index=False)
                     st.download_button("Eşleşmiş Listeyi İndir", out_merged.getvalue(), "eslesmis_veri_listesi.xlsx", use_container_width=True, type="primary")
 
-    # --- ESKI MODÜL: PAZARYERI ŞABLON OLUŞTURMA (ISIM GÜNCELLENDI) ---
+    # MODÜL: PAZARYERI ŞABLON OLUŞTURMA ---
     elif modul == "Pazaryeri Şablon Oluşturma":
         st.subheader("Pazaryeri Şablon Yapılandırma")
         tpl_file = st.file_uploader("Pazaryeri Şablonu Yükle", type=['xlsx', 'csv'], key="tpl_up")
@@ -445,7 +445,155 @@ else:
                     out_mapped = BytesIO()
                     with pd.ExcelWriter(out_mapped, engine='xlsxwriter') as wrm: final_mapped_df.to_excel(wrm, index=False)
                     st.download_button("Pazaryeri Dosyasını İndir", out_mapped.getvalue(), "pazaryeri_aktarim.xlsx", use_container_width=True, type="primary")
+    # MODÜL: EXCEL ALAN ÖZELLEŞTİRME ---
+    elif modul == "Excel Alan Özelleştirme":
+        st.subheader("Excel Alan Özelleştirme ve İsim Düzenleme")
+        st.info("İsimleri benzersizleştirmek için kriterlerinizi belirleyin.")
 
+        islem_tipi = st.radio("İşlem Türü Seçin:", ["Tek Excel (Aynı Dosya İçinde)", "Çift Excel (Başka Dosyadan Veri Çek)"], horizontal=True)
+
+        if islem_tipi == "Tek Excel (Aynı Dosya İçinde)":
+            f = st.file_uploader("Excel Dosyası Yükle", type=['xlsx', 'csv'], key="ozel_tek")
+            if f:
+                # Dosyayı yükle ve tümünü göster
+                df_ozel = pd.read_excel(f) if f.name.endswith('xlsx') else pd.read_csv(f)
+                cols = df_ozel.columns.tolist()
+                
+                c1, c2, c3 = st.columns(3)
+                with c1: target_col = st.selectbox("Düzenlenecek Sütun (Örn: Ürün Adı):", cols)
+                with c2: source_col = st.selectbox("Eklenecek Sütun (Örn: Stok Kodu):", cols)
+                with c3: ayrac = st.text_input("Araya Gelecek Karakter:", value=" - ")
+                
+                # Kapsam Seçenekleri
+                kapsam = st.radio("İşlem Kapsamı:", ["Tüm Liste", "Sadece Tekrar Eden İsimler", "Tablodan Seçtiklerim"], horizontal=True)
+                
+                # Seçim için tabloyu göster (Tüm liste görünür)
+                df_display = df_ozel.copy()
+                if kapsam == "Tablodan Seçtiklerim":
+                    df_display.insert(0, "Seç", False)
+                
+                edited_ozel = st.data_editor(df_display, use_container_width=True, hide_index=True, key="ozel_editor_tablo")
+
+                if st.button("İsimleri Güncelle", type="primary", use_container_width=True):
+                    # Mantığı belirle
+                    if kapsam == "Tüm Liste":
+                        df_ozel[target_col] = df_ozel[target_col].astype(str) + ayrac + df_ozel[source_col].astype(str)
+                    
+                    elif kapsam == "Sadece Tekrar Eden İsimler":
+                        # Sadece aynı isme sahip olanları bul (mask oluştur)
+                        mask = df_ozel.duplicated(subset=[target_col], keep=False)
+                        df_ozel.loc[mask, target_col] = df_ozel.loc[mask, target_col].astype(str) + ayrac + df_ozel.loc[mask, source_col].astype(str)
+                        st.write(f"Bilgi: {mask.sum()} adet tekrar eden ürün ismi güncellendi.")
+                    
+                    elif kapsam == "Tablodan Seçtiklerim":
+                        selected_indices = edited_ozel[edited_ozel["Seç"] == True].index
+                        df_ozel.loc[selected_indices, target_col] = df_ozel.loc[selected_indices, target_col].astype(str) + ayrac + df_ozel.loc[selected_indices, source_col].astype(str)
+
+                    st.success("İşlem Başarıyla Tamamlandı!")
+                    st.dataframe(df_ozel, use_container_width=True) # Güncel halini göster
+                    
+                    out = BytesIO()
+                    with pd.ExcelWriter(out, engine='xlsxwriter') as wr: df_ozel.to_excel(wr, index=False)
+                    st.download_button("Güncel Listeyi İndir", out.getvalue(), "aletedevat_ozellestirilmis_liste.xlsx", use_container_width=True)
+
+        else: # Çift Excel Modu
+            c1, c2 = st.columns(2)
+            with c1: f1 = st.file_uploader("1. Ana Excel (İsimlerin Değişeceği)", type=['xlsx', 'csv'], key="f1_final")
+            with c2: f2 = st.file_uploader("2. Referans Excel (Verinin Alınacağı)", type=['xlsx', 'csv'], key="f2_final")
+            
+            if f1 and f2:
+                # 1. DOSYALARI OKU VE ANINDA BENZERSİZLEŞTİR
+                df1_raw = pd.read_excel(f1) if f1.name.endswith('xlsx') else pd.read_csv(f1)
+                df2_raw = pd.read_excel(f2) if f2.name.endswith('xlsx') else pd.read_csv(f2)
+
+                # Sütunları garantili benzersiz yapma fonksiyonu
+                def make_cols_unique(df):
+                    new_cols = []
+                    counts = {}
+                    for col in df.columns:
+                        if col in counts:
+                            counts[col] += 1
+                            new_cols.append(f"{col}_{counts[col]}")
+                        else:
+                            counts[col] = 0
+                            new_cols.append(col)
+                    df.columns = new_cols
+                    return df
+
+                df1 = make_cols_unique(df1_raw)
+                df2 = make_cols_unique(df2_raw)
+
+                st.success("Dosyalar yüklendi.")
+
+                # 2. SEÇİM ALANLARI
+                cc1, cc2 = st.columns(2)
+                with cc1: 
+                    key1 = st.selectbox("1. Excel Ortak Sütun (SKU):", df1.columns, key="key1_unique")
+                    target_col = st.selectbox("1. Excel Düzenlenecek Sütun (İsim):", df1.columns, key="target_unique")
+                with cc2: 
+                    key2 = st.selectbox("2. Excel Ortak Sütun (SKU):", df2.columns, key="key2_unique")
+                    source_col = st.selectbox("2. Excel'den Alınacak Sütun (Ek Bilgi):", df2.columns, key="source_unique")
+                
+                ayrac = st.text_input("Araya Gelecek Karakter:", value=" - ", key="ayrac_son")
+                
+                # 3. İŞLEM KAPSAMI SEÇİMİ
+                kapsam = st.radio("Hangi Ürünlere İşlem Yapılsın?", 
+                                  ["Tüm Liste", "Sadece İsmi Aynı Olanlar", "Sadece Seçtiğim Ürünler"], 
+                                  horizontal=True)
+
+                # 4. TAM ÖNİZLEME VE SEÇİM TABLOSU
+                df_to_show = df1.copy()
+                if kapsam == "Sadece Seçtiğim Ürünler":
+                    df_to_show.insert(0, "Seç", False)
+                
+                # Tüm listeyi gösteren editör
+                edited_df = st.data_editor(df_to_show, use_container_width=True, hide_index=True, key="full_editor_cift")
+
+                if st.button("Verileri Eşleştir ve Güncelle", type="primary", use_container_width=True):
+                    # Referans tabloyu hazırla (Eğer key2 ve source_col aynıysa hata vermemesi için)
+                    if key2 == source_col:
+                        df2_sub = df2[[key2]].copy()
+                        df2_sub['extra_val'] = df2_sub[key2]
+                        ref_col = 'extra_val'
+                    else:
+                        df2_sub = df2[[key2, source_col]].copy()
+                        ref_col = source_col
+                    
+                    df2_sub = df2_sub.drop_duplicates(subset=[key2])
+                    
+                    # MERGE (Hatayı burada önlüyoruz)
+                    merged = pd.merge(df1, df2_sub, left_on=key1, right_on=key2, how='left')
+
+                    # 5. MANTIK FİLTRELERİ
+                    if kapsam == "Tüm Liste":
+                        mask = merged[ref_col].notna()
+                    
+                    elif kapsam == "Sadece İsmi Aynı Olanlar":
+                        # 1. Tabloda ismi aynı olanları bul (25 tane matkap gibi)
+                        is_duplicate = merged.duplicated(subset=[target_col], keep=False)
+                        mask = is_duplicate & merged[ref_col].notna()
+                    
+                    elif kapsam == "Sadece Seçtiğim Ürünler":
+                        selected_indices = edited_df[edited_df["Seç"] == True].index
+                        mask = (merged.index.isin(selected_indices)) & (merged[ref_col].notna())
+
+                    # GÜNCELLEME İŞLEMİ
+                    merged.loc[mask, target_col] = merged.loc[mask, target_col].astype(str) + ayrac + merged.loc[mask, ref_col].astype(str)
+                    
+                    # Gereksiz sütunları temizle
+                    if key2 in merged.columns: merged = merged.drop(columns=[key2])
+                    if 'extra_val' in merged.columns: merged = merged.drop(columns=['extra_val'])
+                    # Eğer source_col target_col'dan farklıysa ve merge'den geldiyse onu da temizleyelim
+                    if source_col in merged.columns and source_col != target_col and source_col != key1:
+                        merged = merged.drop(columns=[source_col])
+
+                    st.success(f"İşlem Tamamlandı! {mask.sum()} satır güncellendi.")
+                    st.dataframe(merged, use_container_width=True) # Son halini göster
+
+                    # İNDİRME BUTONU
+                    out = BytesIO()
+                    with pd.ExcelWriter(out, engine='xlsxwriter') as wr: merged.to_excel(wr, index=False)
+                    st.download_button("Güncel Listeyi İndir", out.getvalue(), "aletedevat_final_liste.xlsx", use_container_width=True)
     with st.sidebar:
         st.divider()
         if not st.session_state.master_df.empty:
